@@ -60,14 +60,56 @@ func checkVersion(versions []string) error {
 
 func checkRepo() error {
 	cr, err := exec.Command("git", "rev-parse", "--show-toplevel").Output()
-	fmt.Println(cr)
 	if err != nil {
-	  return err
-	}
+		return fmt.Errorf("git rev-parse --show-toplevel failed with:  %s", err)///
+	  }
+	
+	crs := strings.TrimSpace(string(cr))
+	fmt.Println(crs)
   
-	if !strings.Contains(cr, "deploy-sourcegraph-docker") {
+	if !strings.Contains(crs, "deploy-sourcegraph-docker") {
 	  return fmt.Errorf("Must run from deploy-sourcegraph-docker repository") 
 	}
   
 	return nil
   }
+
+  func performStandardUpgrade(versions []string) error {
+
+  // Prune docker volumes
+  if err := exec.Command("docker", "volume", "prune", "-f").Run(); err != nil {
+    return fmt.Errorf("error pruning docker volumes: %s", err)
+  }
+
+  for i, version := range versions {
+
+    // Checkout version tag
+    if !strings.HasPrefix(version, "v") {
+		versions[i] = "v" + version
+	}
+    if err := exec.Command("git", "checkout", version).Run(); err != nil {
+      return fmt.Errorf("error checking out %s: %s", version, err)
+    }
+
+    // Docker compose up
+    cmd := exec.Command("docker-compose", "up", "-d")
+    cmd.Dir = "deploy-sourcegraph-docker/docker-compose" 
+    if err := cmd.Run(); err != nil {
+      return fmt.Errorf("error running docker-compose up for %s: %s", version, err)
+    }
+
+    if i < len(versions)-1 {
+      // Docker compose down
+      cmd := exec.Command("docker-compose", "down", "--remove-orphans")
+      cmd.Dir = "deploy-sourcegraph-docker/docker-compose"
+      if err := cmd.Run(); err != nil {
+        return fmt.Errorf("error running docker-compose down for %s: %s", version, err)  
+      }
+    }
+
+  }
+
+  return nil
+
+}
+  
