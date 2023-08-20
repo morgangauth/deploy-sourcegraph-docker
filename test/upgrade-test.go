@@ -81,6 +81,7 @@ func checkRepo() error {
 }
 
 func performStandardUpgrade(versions []string) error {
+
   // Prune docker volumes
   cmd := exec.Command("docker", "volume", "prune", "-f")
   fmt.Println("Pruning docker volumes...")
@@ -101,14 +102,14 @@ func performStandardUpgrade(versions []string) error {
 
     // Docker compose up
     cmd = exec.Command("docker-compose", "up", "-d")
-	cmd.Dir = "deploy-sourcegraph-docker/docker-compose"
+	cmd.Dir = "/Users/warrengifford/deploy-sourcegraph-docker/docker-compose"
     if err := streamCommandOutput(cmd); err != nil {
 		return fmt.Errorf("failed to run docker-compose up at version %s: %s", version, err)
 	}
 
     // Docker compose down
     cmd = exec.Command("docker-compose", "down", "--remove-orphans")
-    cmd.Dir = "deploy-sourcegraph-docker/docker-compose"
+    cmd.Dir = "/Users/warrengifford/deploy-sourcegraph-docker/docker-compose"
 	if err := streamCommandOutput(cmd); err != nil {
 		return fmt.Errorf("failed to run docker-compose down at version %s: %s", version, err)
 	}
