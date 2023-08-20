@@ -83,21 +83,9 @@ func checkRepo() error {
 func performStandardUpgrade(versions []string) error {
   // Prune docker volumes
   cmd := exec.Command("docker", "volume", "prune", "-f")
-  stdout, _ := cmd.StdoutPipe()
-  stderr, _ := cmd.StderrPipe()
-  if err := cmd.Start(); err != nil {
-        return fmt.Errorf("error starting docker volume prune: %v", err)
-  }
-  stdScanner := bufio.NewScanner(stdout)
-  for stdScanner.Scan() {
-    fmt.Println(stdScanner.Text()) 
-  }
-  errScanner := bufio.NewScanner(stderr)
-  for errScanner.Scan() {
-    fmt.Println(errScanner.Text()) 
-  }
-  if err := cmd.Wait(); err != nil {
-	return err
+  fmt.Println("Pruning docker volumes...")
+  if err := streamCommandOutput(cmd); err != nil {
+	return fmt.Errorf("failed to prune docker volumes: %s", err)
   }
 
   for i, version := range versions {
@@ -107,22 +95,9 @@ func performStandardUpgrade(versions []string) error {
 		versions[i] = "v" + version
 	}
     cmd := exec.Command("git", "checkout", version)
-	stdout, _ := cmd.StdoutPipe()
-    stderr, _ := cmd.StderrPipe()
-	if err := cmd.Start(); err != nil {
-      return fmt.Errorf("error checking out %s: %s", version, err)
-    }
-	stdScanner := bufio.NewScanner(stdout)
-    for stdScanner.Scan() {
-      fmt.Println(stdScanner.Text()) 
-    }
-    errScanner := bufio.NewScanner(stderr)
-    for errScanner.Scan() {
-      fmt.Println(errScanner.Text()) 
-    }
-    if err := cmd.Wait(); err != nil {
-	  return err
-    }
+	if err := streamCommandOutput(cmd); err != nil {
+		return fmt.Errorf("failed to checkout version %s: %s", version, err)
+	}
 
     // // Docker compose up
     // cmd := exec.Command("docker-compose", "up", "-d")
@@ -143,4 +118,24 @@ func performStandardUpgrade(versions []string) error {
 
   }
   return nil
+}
+
+func streamCommandOutput(cmd *exec.Cmd) error {
+	stdout, _ := cmd.StdoutPipe()
+    stderr, _ := cmd.StderrPipe()
+	if err := cmd.Start(); err != nil {
+      return fmt.Errorf("error starting command: %s", err)
+    }
+	stdScanner := bufio.NewScanner(stdout)
+    for stdScanner.Scan() {
+      fmt.Println(stdScanner.Text()) 
+    }
+    errScanner := bufio.NewScanner(stderr)
+    for errScanner.Scan() {
+      fmt.Println(errScanner.Text()) 
+    }
+    if err := cmd.Wait(); err != nil {
+	  return err
+    }
+	return nil
 }
