@@ -99,23 +99,19 @@ func performStandardUpgrade(versions []string) error {
 		return fmt.Errorf("failed to checkout version %s: %s", version, err)
 	}
 
-    // // Docker compose up
-    // cmd := exec.Command("docker-compose", "up", "-d")
-	// cmd.Dir = "deploy-sourcegraph-docker/docker-compose"
-    // out, err = cmd.Output()
-	// if err != nil {
-  	//   return fmt.Errorf("error running docker-compose up for %s: %s", version, err)
-	// }
-	// fmt.Println(string(out))
+    // Docker compose up
+    cmd = exec.Command("docker-compose", "up", "-d")
+	cmd.Dir = "deploy-sourcegraph-docker/docker-compose"
+    if err := streamCommandOutput(cmd); err != nil {
+		return fmt.Errorf("failed to run docker-compose up at version %s: %s", version, err)
+	}
 
-    // // Docker compose down
-    // cmd = exec.Command("docker-compose", "down", "--remove-orphans")
-    // out, err = cmd.Output()
-	// if err != nil {
-    //   return fmt.Errorf("error running docker-compose down for %s: %s", version, err)  
-    // }
-	// fmt.Println(string(out))
-
+    // Docker compose down
+    cmd = exec.Command("docker-compose", "down", "--remove-orphans")
+    cmd.Dir = "deploy-sourcegraph-docker/docker-compose"
+	if err := streamCommandOutput(cmd); err != nil {
+		return fmt.Errorf("failed to run docker-compose down at version %s: %s", version, err)
+	}
   }
   return nil
 }
