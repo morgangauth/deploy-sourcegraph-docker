@@ -109,7 +109,7 @@ func performStandardUpgrade(versions []string) error {
 		return fmt.Errorf("failed to run docker-compose up at version %s: %s", version, err)
 	}
 
-	err := validateUpgrade()
+	err := validateUpgrade(version)
 	if err != nil {
 		return fmt.Errorf("failed to validate upgrade at version %s: %s", version, err)
 	}
